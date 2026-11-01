@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Soundboard</title>
+<style>
+:root{--bg:#14131a;--panel:#1e1c27;--panel2:#262434;--line:#363348;--text:#e9e6f2;--dim:#9a96ad;--accent:#b794f6;--good:#5fd08a;--bad:#ef6b73}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,Segoe UI,sans-serif;padding-bottom:230px}
+button{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer;font:inherit}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:#16111f;border-color:var(--accent);font-weight:600}
+input,select,textarea{background:#17151f;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font:inherit;width:100%}
+header{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+header h1{font-size:18px;margin:0;flex:1}
+#start{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:70vh;text-align:center;padding:20px}
+#start p{color:var(--dim);max-width:420px;margin:0}
+#start button{font-size:20px;padding:16px 34px}
+#app{display:none}
+#scenes{max-width:980px;margin:0 auto;padding:16px;display:grid;gap:14px}
+details.scene{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+details.scene>summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:center}
+details.scene>summary::-webkit-details-marker{display:none}
+.sname{font-weight:700;font-size:16px}
+.sdesc{color:var(--dim);font-size:13px}
+.shead{flex:1;min-width:0}
+.tracks{border-top:1px solid var(--line)}
+.track{display:flex;gap:10px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--line)}
+.track:last-child{border-bottom:0}
+.track.active{background:#2b2540}
+.tinfo{flex:1;min-width:0}
+.ttitle{font-weight:600}
+.tdesc{color:var(--dim);font-size:13px}
+.badge{font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--bad);color:var(--bad)}
+.editrow{display:grid;grid-template-columns:2fr 1.2fr 2fr auto;gap:8px;padding:9px 14px;border-bottom:1px solid var(--line)}
+.addrow{background:var(--panel2)}
+.sedit{display:grid;gap:8px;padding:10px 14px;border-top:1px solid var(--line);background:var(--panel2)}
+.empty{padding:14px;color:var(--dim)}
+#bar{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:10px 16px;z-index:10}
+.barrow{display:flex;gap:14px;align-items:center;flex-wrap:wrap;max-width:980px;margin:0 auto}
+.now{flex:1;min-width:200px}
+.now b{display:block}
+.now span{color:var(--dim);font-size:13px}
+.ctl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim)}
+.ctl input[type=range]{width:120px;padding:0}
+.ctl select{width:auto}
+.players{display:flex;gap:10px;max-width:980px;margin:8px auto 0}
+.pbox{width:178px;height:100px;background:#000;border-radius:6px;overflow:hidden;position:relative}
+.pbox>div,.pbox iframe{width:100%;height:100%}
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--bad);color:#fff;padding:9px 16px;border-radius:8px;display:none;z-index:20}
+</style>
+</head>
+<body>
+
+<div id="start">
+  <h1>Soundboard</h1>
+  <p>Browsers block audio until you click something. Press once to begin, then the scene menu opens.</p>
+  <button class="primary" id="startBtn">Start session</button>
+</div>
+
+<div id="app">
+  <header>
+    <h1>Soundboard</h1>
+    <button id="editBtn">Edit mode</button>
+    <button id="exportBtn">Export</button>
+    <button id="importBtn">Import</button>
+    <input type="file" id="importFile" accept=".json" style="display:none">
+  </header>
+  <div id="scenes"></div>
+</div>
+
+<div id="bar">
+  <div class="barrow">
+    <div class="now"><b id="nowTitle">Nothing playing</b><span id="nowSub"></span></div>
+    <label class="ctl">Volume <input type="range" id="master" min="0" max="100" value="70"></label>
+    <label class="ctl">Fade <input type="range" id="fadeSec" min="1" max="15" value="4"><span id="fadeLbl">4s</span></label>
+    <label class="ctl">When track ends
+      <select id="mode"><option value="loop">Loop it</option><option value="next">Next in scene</option></select>
+    </label>
+    <button id="stopBtn">Fade out</button>
+  </div>
+  <div class="players">
+    <div class="pbox"><div id="yt0"></div></div>
+    <div class="pbox"><div id="yt1"></div></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const KEY='soundboard-v1';
+let state=load()||{scenes:[],closed:[]};
+let edit=false, cur=-1, loaded=[null,null], lvl=[0,0], ready=[false,false], players=[null,null];
+let nowScene=null, fadeRaf=null;
+const $=id=>document.getElementById(id);
+const uid=()=>Math.random().toString(36).slice(2,9);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function load(){try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',4000)}
+
+function videoId(u){
+  u=(u||'').trim();
+  if(/^[\w-]{11}$/.test(u))return u;
+  const m=u.match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/|live\/)([\w-]{11})/);
+  return m?m[1]:null;
+}
+function findTrack(tid){for(const s of state.scenes){const t=s.tracks.find(x=>x.id===tid);if(t)return{s,t}}return null}
+
+/* YouTube players */
+const tag=document.createElement('script');tag.src='https://www.youtube.com/iframe_api';
+tag.onerror=()=>setStatus('YouTube script was blocked or you are offline','Check ad blocker, Edge tracking prevention, and your connection, then reload.');
+document.head.appendChild(tag);
+function setStatus(a,b){const t=$('nowTitle'),s=$('nowSub');if(t)t.textContent=a;if(s)s.textContent=b||''}
+setStatus('Loading YouTube players...','');
+setTimeout(()=>{
+  if(ready[0]&&ready[1])return;
+  if(location.protocol==='file:')setStatus('Players failed to start','Opened as a local file. Host the page (GitHub Pages) and open it from its https link.');
+  else setStatus('Players failed to start','YouTube is blocked on this page. Pause ad blockers, set Edge tracking prevention to Basic for this site, then reload.');
+},8000);
+window.onYouTubeIframeAPIReady=function(){
+  for(let i=0;i<2;i++){
+    players[i]=new YT.Player('yt'+i,{width:'100%',height:'100%',
+      playerVars:Object.assign({playsinline:1,rel:0},/^https?:$/.test(location.protocol)?{origin:location.origin,widget_referrer:location.href}:{}),
+      events:{onReady:()=>{ready[i]=true;players[i].setVolume(0);if(ready[0]&&ready[1])setStatus('Nothing playing','')},onStateChange:e=>onState(i,e),onError:e=>onErr(i,e)}});
+  }
+};
+function onState(i,e){
+  if(e.data===0&&i===cur){
+    if($('mode').value==='next')playNext();
+    else{players[i].seekTo(0);players[i].playVideo()}
+  }
+  if(e.data===1&&i===cur){
+    const t=loaded[i];
+    if(t&&t.status==='failed'){t.status='ok';save();render()}
+  }
+}
+function onErr(i,e){
+  const t=loaded[i];
+  if(t){t.status='failed';save();render();toast('Failed to load: '+(t.title||t.url)+' (code '+e.data+')')}
+}
+
+/* Playback */
+function playTrack(tid){
+  if(!ready[0]||!ready[1]){toast('Players still loading, try again in a second');return}
+  const f=findTrack(tid);if(!f)return;
+  const id=videoId(f.t.url);
+  if(!id){f.t.status='failed';save();render();toast('Not a valid YouTube link');return}
+  const n=cur<0?0:1-cur;
+  lvl[n]=0;players[n].setVolume(0);players[n].loadVideoById(id);
+  loaded[n]=f.t;cur=n;nowScene=f.s.id;
+  f.t.status='';
+  startFade();updateNow();render();
+}
+function playScene(sid){
+  const s=state.scenes.find(x=>x.id===sid);if(!s)return;
+  const ok=s.tracks.filter(t=>t.status!=='failed'&&videoId(t.url));
+  if(!ok.length){toast('No playable tracks in this scene');return}
+  playTrack(ok[Math.floor(Math.random()*ok.length)].id);
+}
+function playNext(){
+  const s=state.scenes.find(x=>x.id===nowScene);if(!s)return;
+  const ok=s.tracks.filter(t=>t.status!=='failed'&&videoId(t.url));
+  if(!ok.length)return;
+  const i=ok.indexOf(loaded[cur]);
+  playTrack(ok[(i+1)%ok.length].id);
+}
+function fadeOutAll(){cur=-1;nowScene=null;startFade();updateNow();render()}
+
+function startFade(){
+  clearInterval(fadeRaf);
+  const from=lvl.slice(),t0=performance.now(),ms=$('fadeSec').value*1000;
+  const tick=()=>{
+    const k=Math.min(1,(performance.now()-t0)/ms);
+    for(let i=0;i<2;i++){
+      if(i===cur)lvl[i]=from[i]+(1-from[i])*Math.sin(k*Math.PI/2);
+      else lvl[i]=from[i]*Math.cos(k*Math.PI/2);
+    }
+    applyVol();
+    if(k>=1){
+      clearInterval(fadeRaf);
+      for(let i=0;i<2;i++)if(i!==cur){lvl[i]=0;applyVol();try{players[i].stopVideo()}catch(e){}}
+    }
+  };
+  fadeRaf=setInterval(tick,50);
+  tick();
+}
+function applyVol(){
+  const m=$('master').value/100;
+  for(let i=0;i<2;i++)if(ready[i])players[i].setVolume(Math.round(lvl[i]*m*100));
+}
+function updateNow(){
+  const t=cur>=0?loaded[cur]:null;
+  const s=state.scenes.find(x=>x.id===nowScene);
+  $('nowTitle').textContent=t?(t.title||t.url):'Nothing playing';
+  $('nowSub').textContent=t&&s?s.name:'';
+}
+
+/* Rendering */
+function render(){
+  const root=$('scenes');
+  if(!state.scenes.length){
+    root.innerHTML='<div class="empty">No scenes yet. Turn on Edit mode and add one.</div>'+(edit?'<button data-act="addscene">+ Add scene</button>':'');
+    return;
+  }
+  const playing=cur>=0&&loaded[cur]?loaded[cur].id:null;
+  root.innerHTML=state.scenes.map(s=>{
+    const open=!state.closed.includes(s.id)?'open':'';
+    const tracks=s.tracks.map(t=>edit?
+      `<div class="editrow">
+        <input data-f="url" data-tid="${t.id}" value="${esc(t.url)}" placeholder="YouTube link">
+        <input data-f="title" data-tid="${t.id}" value="${esc(t.title)}" placeholder="Title">
+        <input data-f="desc" data-tid="${t.id}" value="${esc(t.desc)}" placeholder="Description">
+        <button data-act="deltrack" data-tid="${t.id}">Delete</button>
+      </div>`:
+      `<div class="track ${t.id===playing?'active':''}">
+        <button class="primary" data-act="play" data-tid="${t.id}">Play</button>
+        <div class="tinfo"><div class="ttitle">${esc(t.title||t.url)}</div><div class="tdesc">${esc(t.desc)}</div></div>
+        ${t.status==='failed'?'<span class="badge">Failed to load</span>':''}
+      </div>`).join('')||'<div class="empty">No tracks.</div>';
+    const add=edit?`<div class="editrow addrow" data-sid="${s.id}">
+        <input data-n="url" placeholder="YouTube link"><input data-n="title" placeholder="Title"><input data-n="desc" placeholder="Description">
+        <button data-act="addtrack" data-sid="${s.id}">Add track</button></div>`:'';
+    const sedit=edit?`<div class="sedit">
+        <input data-sf="name" data-sid="${s.id}" value="${esc(s.name)}" placeholder="Scene name">
+        <input data-sf="desc" data-sid="${s.id}" value="${esc(s.desc)}" placeholder="Scene description">
+        <div><button data-act="delscene" data-sid="${s.id}">Delete scene</button></div></div>`:'';
+    return `<details class="scene" data-sid="${s.id}" ${open}>
+      <summary><div class="shead"><div class="sname">${esc(s.name)}</div><div class="sdesc">${esc(s.desc)}</div></div>
+      ${edit?'':`<button class="primary" data-act="playscene" data-sid="${s.id}">Play scene</button>`}</summary>
+      <div class="tracks">${tracks}${add}</div>${sedit}</details>`;
+  }).join('')+(edit?'<button data-act="addscene">+ Add scene</button>':'');
+}
+
+$('scenes').addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const a=b.dataset.act,sid=b.dataset.sid,tid=b.dataset.tid;
+  if(a==='playscene'){e.preventDefault();playScene(sid)}
+  else if(a==='play')playTrack(tid);
+  else if(a==='addscene'){state.scenes.push({id:uid(),name:'New scene',desc:'',tracks:[]});save();render()}
+  else if(a==='delscene'){
+    if(b.dataset.armed){state.scenes=state.scenes.filter(s=>s.id!==sid);save();render()}
+    else{b.dataset.armed='1';b.textContent='Tap again to delete';b.classList.add('primary');
+      setTimeout(()=>{if(b.isConnected){delete b.dataset.armed;b.textContent='Delete scene';b.classList.remove('primary')}},3000)}
+  }
+  else if(a==='deltrack'){const f=findTrack(tid);if(f){f.s.tracks=f.s.tracks.filter(t=>t.id!==tid);save();render()}}
+  else if(a==='addtrack'){
+    const row=b.closest('.addrow'),g=n=>row.querySelector('[data-n='+n+']').value.trim();
+    if(!videoId(g('url'))){toast('Paste a valid YouTube link first');return}
+    const s=state.scenes.find(x=>x.id===sid);
+    s.tracks.push({id:uid(),url:g('url'),title:g('title'),desc:g('desc'),status:''});save();render();
+  }
+});
+$('scenes').addEventListener('change',e=>{
+  const el=e.target;
+  if(el.dataset.f){const f=findTrack(el.dataset.tid);if(f){f.t[el.dataset.f]=el.value;if(el.dataset.f==='url')f.t.status='';save()}}
+  else if(el.dataset.sf){const s=state.scenes.find(x=>x.id===el.dataset.sid);if(s){s[el.dataset.sf]=el.value;save()}}
+});
+$('scenes').addEventListener('toggle',e=>{
+  const d=e.target;if(!d.dataset||!d.dataset.sid)return;
+  const i=state.closed.indexOf(d.dataset.sid);
+  if(d.open&&i>=0)state.closed.splice(i,1);
+  if(!d.open&&i<0)state.closed.push(d.dataset.sid);
+  save();
+},true);
+
+/* Controls */
+$('startBtn').onclick=()=>{$('start').style.display='none';$('app').style.display='block';render()};
+$('editBtn').onclick=()=>{edit=!edit;$('editBtn').textContent=edit?'Done editing':'Edit mode';render()};
+$('master').oninput=applyVol;
+$('fadeSec').oninput=()=>$('fadeLbl').textContent=$('fadeSec').value+'s';
+$('stopBtn').onclick=fadeOutAll;
+$('exportBtn').onclick=()=>{
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));
+  a.download='soundboard.json';a.click();
+};
+$('importBtn').onclick=()=>$('importFile').click();
+$('importFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.scenes))throw 0;state={scenes:d.scenes,closed:d.closed||[]};save();render()}catch(x){toast('That file is not a valid soundboard export')}};
+  r.readAsText(f);
+};
+</script>
+</body>
+</html>
