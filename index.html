@@ -19,7 +19,7 @@ header h1{font-size:18px;margin:0;flex:1}
 #start p{color:var(--dim);max-width:420px;margin:0}
 #start button{font-size:20px;padding:16px 34px}
 #app{display:none}
-#scenes{max-width:980px;margin:0 auto;padding:16px;display:grid;gap:14px}
+#scenes{max-width:1700px;margin:0 auto;padding:16px;display:grid;gap:14px}
 details.scene{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 details.scene>summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:center}
 details.scene>summary::-webkit-details-marker{display:none}
@@ -27,6 +27,16 @@ details.scene>summary::-webkit-details-marker{display:none}
 .sdesc{color:var(--dim);font-size:13px}
 .shead{flex:1;min-width:0}
 .tracks{border-top:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;padding:12px}
+.grid .empty{grid-column:1/-1;padding:6px 2px}
+.tile{min-height:112px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;gap:5px;padding:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tile .ttitle{font-size:16px;line-height:1.2;word-break:break-word}
+.tile .tdesc{font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tile.active{background:#3a2f5c;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.tile:active{transform:scale(.97)}
+@media(max-width:1200px){.grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(max-width:850px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:520px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .track{display:flex;gap:10px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--line)}
 .track:last-child{border-bottom:0}
 .track.active{background:#2b2540}
@@ -39,14 +49,14 @@ details.scene>summary::-webkit-details-marker{display:none}
 .sedit{display:grid;gap:8px;padding:10px 14px;border-top:1px solid var(--line);background:var(--panel2)}
 .empty{padding:14px;color:var(--dim)}
 #bar{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:10px 16px;z-index:10}
-.barrow{display:flex;gap:14px;align-items:center;flex-wrap:wrap;max-width:980px;margin:0 auto}
+.barrow{display:flex;gap:14px;align-items:center;flex-wrap:wrap;max-width:1700px;margin:0 auto}
 .now{flex:1;min-width:200px}
 .now b{display:block}
 .now span{color:var(--dim);font-size:13px}
 .ctl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim)}
 .ctl input[type=range]{width:120px;padding:0}
 .ctl select{width:auto}
-.players{display:flex;gap:10px;max-width:980px;margin:8px auto 0}
+.players{display:flex;gap:10px;max-width:1700px;margin:8px auto 0}
 .pbox{width:178px;height:100px;background:#000;border-radius:6px;overflow:hidden;position:relative}
 .pbox>div,.pbox iframe{width:100%;height:100%}
 #toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--bad);color:#fff;padding:9px 16px;border-radius:8px;display:none;z-index:20}
@@ -215,11 +225,11 @@ function render(){
         <input data-f="desc" data-tid="${t.id}" value="${esc(t.desc)}" placeholder="Description">
         <button data-act="deltrack" data-tid="${t.id}">Delete</button>
       </div>`:
-      `<div class="track ${t.id===playing?'active':''}">
-        <button class="primary" data-act="play" data-tid="${t.id}">Play</button>
-        <div class="tinfo"><div class="ttitle">${esc(t.title||t.url)}</div><div class="tdesc">${esc(t.desc)}</div></div>
+      `<button class="tile ${t.id===playing?'active':''}" data-act="play" data-tid="${t.id}">
+        <span class="ttitle">${esc(t.title||t.url)}</span>
+        <span class="tdesc">${esc(t.desc)}</span>
         ${t.status==='failed'?'<span class="badge">Failed to load</span>':''}
-      </div>`).join('')||'<div class="empty">No tracks.</div>';
+      </button>`).join('')||'<div class="empty">No tracks.</div>';
     const add=edit?`<div class="editrow addrow" data-sid="${s.id}">
         <input data-n="url" placeholder="YouTube link"><input data-n="title" placeholder="Title"><input data-n="desc" placeholder="Description">
         <button data-act="addtrack" data-sid="${s.id}">Add track</button></div>`:'';
@@ -230,7 +240,7 @@ function render(){
     return `<details class="scene" data-sid="${s.id}" ${open}>
       <summary><div class="shead"><div class="sname">${esc(s.name)}</div><div class="sdesc">${esc(s.desc)}</div></div>
       ${edit?'':`<button class="primary" data-act="playscene" data-sid="${s.id}">Play scene</button>`}</summary>
-      <div class="tracks">${tracks}${add}</div>${sedit}</details>`;
+      <div class="tracks${edit?'':' grid'}">${tracks}${add}</div>${sedit}</details>`;
   }).join('')+(edit?'<button data-act="addscene">+ Add scene</button>':'');
 }
 
