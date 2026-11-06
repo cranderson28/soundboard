@@ -1,0 +1,124 @@
+{
+  "scenes": [
+    {
+      "id": "ptugsav",
+      "name": "Under The Ring",
+      "desc": "Ambient Music",
+      "tracks": [
+        {
+          "id": "8zcx0w5",
+          "url": "https://www.youtube.com/watch?v=YDSWvMAV5Kc",
+          "title": "Lady's Ward",
+          "desc": "Lady's Ward Ambiance",
+          "status": ""
+        },
+        {
+          "id": "icokgwf",
+          "url": "https://www.youtube.com/watch?v=wzjCORdcIzI",
+          "title": "The Hive",
+          "desc": "Hive Ward Ambiance",
+          "status": ""
+        },
+        {
+          "id": "7fc7x9q",
+          "url": "https://www.youtube.com/watch?v=b5wW6ZSOdyw",
+          "title": "Lower Ward",
+          "desc": "Lower Ward Ambiance",
+          "status": ""
+        },
+        {
+          "id": "5kravs1",
+          "url": "https://www.youtube.com/watch?v=wV3yJq-CxMc",
+          "title": "Clerks Ward",
+          "desc": "Clerks Ward Ambiance",
+          "status": ""
+        },
+        {
+          "id": "neifeny",
+          "url": "https://www.youtube.com/watch?v=2pRXqEmqavM",
+          "title": "Market Ward",
+          "desc": "Market Ward Ambiance",
+          "status": ""
+        },
+        {
+          "id": "ndnq7qc",
+          "url": "https://www.youtube.com/watch?v=2GX9lVHfnxs",
+          "title": "Low Level Combat",
+          "desc": "Bandits, Rats, and Small Creatures",
+          "status": ""
+        },
+        {
+          "id": "gdxbfne",
+          "url": "https://www.youtube.com/watch?v=_YpKEpF0oxo",
+          "title": "Mid Level Combat",
+          "desc": "Captains, Equal creatures",
+          "status": ""
+        },
+        {
+          "id": "zknp96c",
+          "url": "https://www.youtube.com/watch?v=mWT11B_-sjQ",
+          "title": "Boss Battle",
+          "desc": "The Boss of an Encounter",
+          "status": ""
+        },
+        {
+          "id": "wmhdwnf",
+          "url": "https://www.youtube.com/watch?v=orgikrTCKTc",
+          "title": "Upscale Inn",
+          "desc": "Five Portals Inn",
+          "status": ""
+        },
+        {
+          "id": "tv81l6t",
+          "url": "https://www.youtube.com/watch?v=fHnpVIW7Qx0",
+          "title": "Initial Bastion",
+          "desc": "REMOVE THIS WHEN THEY FIX IT!!!",
+          "status": ""
+        },
+        {
+          "id": "bn43t3i",
+          "url": "https://www.youtube.com/watch?v=fHnpVIW7Qx0",
+          "title": "New Haven",
+          "desc": "The Town of New Haven",
+          "status": ""
+        },
+        {
+          "id": "0gyk1zx",
+          "url": "https://www.youtube.com/watch?v=dyWO9NEEL9o",
+          "title": "Green Plains",
+          "desc": "Use for Travel in peace time.  (New Haven Valley for sure)",
+          "status": ""
+        },
+        {
+          "id": "u1ekqqt",
+          "url": "https://www.youtube.com/watch?v=RPkHu8M_U4c",
+          "title": "Tense Negotiations",
+          "desc": "Tense Negotiations",
+          "status": ""
+        },
+        {
+          "id": "4v3vozc",
+          "url": "https://www.youtube.com/watch?v=sHA_4wfQhE8",
+          "title": "General Music",
+          "desc": "General !!!",
+          "status": ""
+        },
+        {
+          "id": "ewswo1x",
+          "url": "https://www.youtube.com/watch?v=ealUJoapkCU",
+          "title": "Parade of the Wandering Flame",
+          "desc": "Probably to be used only one time",
+          "status": ""
+        },
+        {
+          "id": "004dvq9",
+          "url": "https://www.youtube.com/watch?v=Jue67If_hw4",
+          "title": "Raise the Roof (The Bard of Five)",
+          "desc": "Probably to be used only one time",
+          "status": ""
+        }
+      ]
+    }
+  ],
+  "closed": []
+}

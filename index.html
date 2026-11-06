@@ -74,6 +74,7 @@ details.scene>summary::-webkit-details-marker{display:none}
   <header>
     <h1>Soundboard</h1>
     <button id="editBtn">Edit mode</button>
+    <button id="syncBtn">Sync from repo</button>
     <button id="exportBtn">Export</button>
     <button id="importBtn">Import</button>
     <input type="file" id="importFile" accept=".json" style="display:none">
@@ -109,7 +110,7 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 
 function load(){try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
-function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',4000)}
+function toast(m,ok){const t=$('toast');t.style.background=ok?'#2f8f57':'';t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',4000)}
 
 function videoId(u){
   u=(u||'').trim();
@@ -287,6 +288,30 @@ $('exportBtn').onclick=()=>{
   a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));
   a.download='soundboard.json';a.click();
 };
+async function fetchRepo(){
+  const r=await fetch('soundboard.json?v='+Date.now(),{cache:'no-store'});
+  if(!r.ok)throw new Error('http '+r.status);
+  const d=await r.json();
+  if(!Array.isArray(d.scenes))throw new Error('bad file');
+  return d;
+}
+function useRepo(d){
+  state={scenes:d.scenes,closed:d.closed||[]};
+  state.scenes.forEach(s=>s.tracks.forEach(t=>t.status=''));
+  save();render();
+}
+$('syncBtn').onclick=async()=>{
+  const b=$('syncBtn');
+  if(!b.dataset.armed){
+    b.dataset.armed='1';b.textContent='Tap again: replace local scenes';b.classList.add('primary');
+    setTimeout(()=>{delete b.dataset.armed;b.textContent='Sync from repo';b.classList.remove('primary')},4000);
+    return;
+  }
+  delete b.dataset.armed;b.textContent='Sync from repo';b.classList.remove('primary');
+  try{useRepo(await fetchRepo());toast('Synced from repo',true)}
+  catch(e){toast('Could not load soundboard.json from the repo')}
+};
+if(!state.scenes.length){fetchRepo().then(useRepo).catch(()=>{})}
 $('importBtn').onclick=()=>$('importFile').click();
 $('importFile').onchange=e=>{
   const f=e.target.files[0];if(!f)return;
