@@ -116,6 +116,22 @@
           "title": "Raise the Roof (The Bard of Five)",
           "desc": "Probably to be used only one time",
           "status": ""
+        },
+        {
+          "id": "b59yhz6",
+          "url": "https://www.youtube.com/watch?v=ewceCUF4qtU",
+          "title": "Ethereal Plane",
+          "desc": "Ethereal Music (play with lapping water",
+          "layer": "music",
+          "status": ""
+        },
+        {
+          "id": "ig813hj",
+          "url": "https://www.youtube.com/watch?v=hfRsWmUfh7Y",
+          "title": "Lapping Water",
+          "desc": "Play with Ethereal Plane",
+          "layer": "ambience",
+          "status": ""
         }
       ]
     }
